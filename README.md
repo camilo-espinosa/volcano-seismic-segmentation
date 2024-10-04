@@ -1,2 +1,2 @@
 # vulcano-seismic-segmentation
-Repository-to-be for Article "A New Framework for Real-Time Detection and Classification of Seismic Events in Volcano Monitoring Based on Semantic Segmentation and Multi-Station Signals"
+Repository-to-be for Article "A Framework for Real-Time Volcano-Seismic Event Recognition Based on Multi-Station Seismograms and Deep Semantic Segmentation Models"
