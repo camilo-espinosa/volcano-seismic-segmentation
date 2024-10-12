@@ -71,15 +71,15 @@ def print_trace(
         5: "#8c564b",
     }
     labels = {
-        1: "FRE",
-        2: "SHG",
-        3: "NBL",
-        4: "CHA",
-        5: "FU2",
-        6: "CHS",
-        7: "LBN",
-        8: "PLA",
-        9: "BG",
+        1: "station 1",
+        2: "station 2",
+        3: "station 3",
+        4: "station 4",
+        5: "station 5",
+        6: "station 6",
+        7: "station 7",
+        8: "station 8",
+        9:  "BG",
         10: "VT",
         11: "LP",
         12: "TR",
@@ -100,6 +100,7 @@ def print_trace(
                 color=colors["input"],
                 lw=0.8,
             )
+            axes[idx].set_ylim(-1.2, 1.2)  # Set limits for y-axis
         else:
             sns.lineplot(
                 x=np.arange(trace_data.shape[1]) / 100,
@@ -108,15 +109,12 @@ def print_trace(
                 color=colors[idx - n_stations],
                 lw=2,
             )
-
+            axes[idx].set_ylim(-.1, 1.1)  # Set limits for y-axis
         # Set custom y-label
-        axes[idx].set_ylabel(f"           {labels[idx + 1]}", rotation=0)
+        axes[idx].set_ylabel(f"                {labels[idx + 1]}", rotation=0)
         axes[idx].yaxis.set_label_position("right")  # Place y-labels on the left
         # axes[idx].set_yticks([])  # Remove y-axis ticks
-        axes[idx].set_ylim(-1.2, 1.2)  # Set limits for y-axis
-
     axes[-1].set_xlabel("time [s]")  # Shared x-axis label
-    plt.axis("off")
     if save:
         plt.savefig(save_path)
         plt.close("all")
