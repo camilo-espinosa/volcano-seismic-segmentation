@@ -90,7 +90,7 @@ def print_trace(
 
     fig, axes = plt.subplots(
         n_stations + 6, 1, sharex=True, figsize=figsize, num=num, dpi=dpi
-    )  # Increased height to 12 for better spacing
+    )  
     for idx, wave in enumerate(trace_data):
         if idx < n_stations:
             sns.lineplot(
@@ -100,7 +100,7 @@ def print_trace(
                 color=colors["input"],
                 lw=0.8,
             )
-            axes[idx].set_ylim(-1.2, 1.2)  # Set limits for y-axis
+            axes[idx].set_ylim(-1.2, 1.2)  
         else:
             sns.lineplot(
                 x=np.arange(trace_data.shape[1]) / 100,
@@ -109,12 +109,10 @@ def print_trace(
                 color=colors[idx - n_stations],
                 lw=2,
             )
-            axes[idx].set_ylim(-.1, 1.1)  # Set limits for y-axis
-        # Set custom y-label
+            axes[idx].set_ylim(-.1, 1.1) 
         axes[idx].set_ylabel(f"                {labels[idx + 1]}", rotation=0)
-        axes[idx].yaxis.set_label_position("right")  # Place y-labels on the left
-        # axes[idx].set_yticks([])  # Remove y-axis ticks
-    axes[-1].set_xlabel("time [s]")  # Shared x-axis label
+        axes[idx].yaxis.set_label_position("right")  # Place y-labels on the right
+    axes[-1].set_xlabel("time [s]")  
     if save:
         plt.savefig(save_path)
         plt.close("all")
@@ -134,7 +132,7 @@ def fold_y(y, N=256, n_classes=6, n_stations=8):
     patches = patches.permute(1, 0, 2)
     patches = patches.unfold(2, N, N)
     patches = patches.permute(0, 2, 1, 3)
-    y = patches.reshape(n_classes + 1, -1, N)
+    y = patches.reshape(n_classes, -1, N)
     return y
 
 
