@@ -7,21 +7,21 @@ Code Implementation of the article "[A Framework for Real-Time Volcano-Seismic E
 ## Structure
 - **`utils/`**: Contains utility functions to perform the proposed framework.
 - **`models/`**: Includes model architectures. UNet and SwinUNet Implementations are used out-of-the-box from the codes at [https://github.com/mateuszbuda/brain-segmentation-pytorch](https://github.com/mateuszbuda/brain-segmentation-pytorch) and [https://github.com/HuCaoFighting/Swin-Unet](https://github.com/HuCaoFighting/Swin-Unet), respectively. Pre-trained weights are available at [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.13902232.svg)](https://doi.org/10.5281/zenodo.13902232).
-- **`examples/`**: Example scripts for data exploration and running the model.
+- **`examples/`**: Example scripts for data exploration, demonstration of the folding procedure, and running the model.
 
 
 ## Setup
 Clone this repository:
 ```bash
 git clone https://github.com/camilo-espinosa/volcano-seismic-segmentation.git
-cd repository-name
+cd volcano-seismic-segmentation
 ```
 Install dependencies in requirements.txt
 
 ```bash
 pip install -r requirements.txt
 ```
-A version of PyTorch, with CUDA compatibility is also necessary: [https://pytorch.org/get-started/locally/](https://pytorch.org/get-started/locally/).
+A version of PyTorch, with CUDA compatibility is also necessary to use GPU: [https://pytorch.org/get-started/locally/](https://pytorch.org/get-started/locally/).
 
 ```bash
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
