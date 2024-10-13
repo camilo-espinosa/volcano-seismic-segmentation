@@ -6,7 +6,7 @@ Code Implementation of the article "[A Framework for Real-Time Volcano-Seismic E
 
 ## Structure
 - **`utils/`**: Contains utility functions to perform the proposed framework.
-- **`models/`**: Includes model architectures. Pre-trained weights are available at [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1234567.svg)](10.5281/zenodo.13902232).
+- **`models/`**: Includes model architectures. UNet and SwinUNet Implementations are used out-of-the-box from the codes at [https://github.com/mateuszbuda/brain-segmentation-pytorch](https://github.com/mateuszbuda/brain-segmentation-pytorch) and [https://github.com/HuCaoFighting/Swin-Unet](https://github.com/HuCaoFighting/Swin-Unet), respectively. Pre-trained weights are available at [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.13902232.svg)](https://doi.org/10.5281/zenodo.13902232).
 - **`examples/`**: Example scripts for data exploration and running the model.
 
 
@@ -36,14 +36,16 @@ cd examples
 ### Explore the data: 
 explore_data.ipynb
 
-### Folding/Unfolding Demonstration: 
+### Folding Demonstration: 
 folding_example.ipynb
 
+### Segmentation Demo:
+segmentation_demo.ipynb
 
+## Data and weights availability:
 Datasets are freely available at: 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1234567.svg)](https://doi.org/10.5281/zenodo.13901244)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.13901244.svg)](https://doi.org/10.5281/zenodo.13901244)
 
 Pre-trained weights for the four evaluated models (UNet, UNet++, DeepLabV3+ and SwinUNet) are also freely available at: 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1234567.svg)](https://doi.org/10.5281/zenodo.13902232).
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.13902232.svg)](https://doi.org/10.5281/zenodo.13902232).
 
-UNet and SwinUNet Implementations are used as is from the codes at https://github.com/mateuszbuda/brain-segmentation-pytorch and https://github.com/HuCaoFighting/Swin-Unet, respectively.
