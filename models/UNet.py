@@ -3,6 +3,11 @@ import torch.nn.functional as F
 import torch
 import torch.nn as nn
 
+# This script uses a model implementation from the following GitHub repository:
+# U-Net for brain segmentation: https://github.com/mateuszbuda/brain-segmentation-pytorch
+
+# The model is utilized as-is from the repository and follows the 
+# original documentation and usage guidelines.
 
 class UNet(nn.Module):
 

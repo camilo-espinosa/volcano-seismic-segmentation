@@ -5,7 +5,13 @@ from einops import rearrange
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
 import torch.nn.functional as F
 
-''' Implementation from '''
+# This script uses a model implementation from the following GitHub repository:
+# Swin-Unet: https://github.com/HuCaoFighting/Swin-Unet
+
+# The model is utilized as-is from the repository and follows the 
+# original documentation and usage guidelines.
+
+
 
 class Mlp(nn.Module):
     def __init__(
