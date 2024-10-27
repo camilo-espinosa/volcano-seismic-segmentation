@@ -34,13 +34,13 @@ from the examples folder:
 cd examples
 ```
 ### Explore the data: 
-explore_data.ipynb
+[explore_data.ipynb](https://github.com/camilo-espinosa/volcano-seismic-segmentation/blob/main/examples/explore_data.ipynb)
 
 ### Folding Demonstration: 
-folding_example.ipynb
+[folding_example.ipynb](https://github.com/camilo-espinosa/volcano-seismic-segmentation/blob/main/examples/folding_procedure.ipynb)
 
 ### Segmentation Demo:
-segmentation_demo.ipynb
+[segmentation_demo.ipynb](https://github.com/camilo-espinosa/volcano-seismic-segmentation/blob/main/examples/segmentation_demo.ipynb)
 
 ## Data and weights availability:
 Datasets are freely available at: 
