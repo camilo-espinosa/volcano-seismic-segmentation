@@ -2,7 +2,7 @@
 # Real-Time Seismic Event Recognition with Semantic Segmentation
 
 
-Code Implementation of the article "[A Framework for Real-Time Volcano-Seismic Event Recognition Based on Multi-Station Seismograms and Semantic Segmentation Models](link-to-paper)" (under review).
+Code Implementation of the article "[A Framework for Real-Time Volcano-Seismic Event Recognition Based on Multi-Station Seismograms and Semantic Segmentation Models](https://arxiv.org/abs/2410.20595)" (under review).
 
 ## Structure
 - **`utils/`**: Contains utility functions to perform the proposed framework.
