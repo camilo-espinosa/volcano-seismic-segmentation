@@ -37,15 +37,17 @@ cd examples
 [explore_data.ipynb](https://github.com/camilo-espinosa/volcano-seismic-segmentation/blob/main/examples/explore_data.ipynb)
 
 ### Folding Demonstration: 
-[folding_example.ipynb](https://github.com/camilo-espinosa/volcano-seismic-segmentation/blob/main/examples/folding_procedure.ipynb)
+[patch_stacking_demo.ipynb](https://github.com/camilo-espinosa/volcano-seismic-segmentation/blob/main/examples/folding_procedure.ipynb)
 
-### Segmentation Demo:
-[segmentation_demo.ipynb](https://github.com/camilo-espinosa/volcano-seismic-segmentation/blob/main/examples/segmentation_demo.ipynb)
+### Window Level Detection Demo:
+[window_level_demo.ipynb](https://github.com/camilo-espinosa/volcano-seismic-segmentation/blob/main/examples/window_level_demo.ipynb)
+
+### Continuous Data Detection Demo:
+[continuous_detection_demo.ipynb](https://github.com/camilo-espinosa/volcano-seismic-segmentation/blob/main/examples/continuous_detection_demo.ipynb)
 
 ## Data and weights availability:
 Datasets are freely available at: 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.13901244.svg)](https://doi.org/10.5281/zenodo.13901244)
 
 Pre-trained weights for the four evaluated models (UNet, UNet++, DeepLabV3+ and SwinUNet) are also freely available at: 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.13902232.svg)](https://doi.org/10.5281/zenodo.13902232).
-
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15098817.svg)](https://doi.org/10.5281/zenodo.15098817).
