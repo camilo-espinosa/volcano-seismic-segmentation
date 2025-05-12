@@ -100,19 +100,21 @@ def plot_trace(
 
 def patch_stacking_X(X, N=256):
     """
-    Performs the Folding procedure over a multi-channel 1D tensor to obtain a 'NxN' image.
-
-    Args:
-        X (torch.Tensor): The input multi-channel 1D tensor to be folded.
-        N (int, optional): The size of the image to be generated. Defaults to 256.
-
-    Returns:
-        torch.Tensor: The reshaped tensor of size (1, N, N).
+    Input shape: (batch_size, 8, 8192)
+    Output shape: (batch_size, 1, 256, 256)
     """
-    patches = X.unfold(1, N, N)
-    patches = patches.permute(1, 0, 2)
-    X = patches.reshape(-1, N).unsqueeze(0)
-    return X.float()
+    batch_size = X.size(0)
+
+    # Unfold each channel in dim=2 (length 8192) into 256-length patches
+    patches = X.unfold(
+        dimension=2, size=N, step=N
+    )  # shape: (batch, 8, num_patches=32, 256)
+
+    # Rearrange into (batch, 1, 256, 256)
+    patches = patches.permute(0, 2, 1, 3)  # (batch, 32, 8, 256)
+    X_out = patches.reshape(batch_size, 1, N, N)  # (batch, 1, 256, 256)
+
+    return X_out.float()
 
 
 def patch_stacking_y(y, N=256, n_classes=6, n_stations=8):
@@ -136,7 +138,7 @@ def patch_stacking_y(y, N=256, n_classes=6, n_stations=8):
     return y.float()
 
 
-def activation_unstacking(img, len_window=8192, im_size=256, n_classes=6):
+def activation_unstacking(img, len_window=8192, N=256, n_classes=6):
     """
     Unfolds the 2D predicted masks `mask` (produced by the model) back into the multi-channel 1D array `y`, which represents time segmentation.
 
@@ -152,9 +154,7 @@ def activation_unstacking(img, len_window=8192, im_size=256, n_classes=6):
     output = zeros([len(img), n_classes, len_window])
     for idx, patches in enumerate(img):
         patches = patches.unfold(1, 8, 8)
-        patches = patches.permute(0, 3, 1, 2).reshape(
-            n_classes, 8, im_size * im_size // 8
-        )
+        patches = patches.permute(0, 3, 1, 2).reshape(n_classes, 8, N * N // 8)
         patches_y = patches.sum(axis=1)
         patches_y = patches_y / patches_y.max()
         output[idx] = patches_y
@@ -559,7 +559,9 @@ def _top_two(conf_dict):
     return second_label, conf2_sum
 
 
-def merge_same_class_events_with_gap(df: pd.DataFrame) -> pd.DataFrame:
+def merge_same_class_events_with_gap(
+    df: pd.DataFrame, minimal_time: int = 250
+) -> pd.DataFrame:
     """
     Merge overlapping / nearly adjacent events of the *same* main class
     (`pred_label`).  All confidences are **summed**; the second‑ and
@@ -584,13 +586,7 @@ def merge_same_class_events_with_gap(df: pd.DataFrame) -> pd.DataFrame:
             second_pred_label,
             conf_1, conf_2
     """
-    gap_thr = {
-        "VT": 300,
-        "LP": 500,
-        "TR": 1500,
-        "AV": 400,
-        "IC": 100,
-    }
+
     merged_rows = []
     req_cols = {
         "idx_start",
@@ -623,7 +619,7 @@ def merge_same_class_events_with_gap(df: pd.DataFrame) -> pd.DataFrame:
         # -------------------------------------------------------------- #
         # iterate over the rest of the rows in the group
         # -------------------------------------------------------------- #
-        minimal_time = gap_thr[label]
+
         for _, row in grp.iloc[1:].iterrows():
             s, e = int(row.idx_start), int(row.idx_end)
 
@@ -694,3 +690,124 @@ def get_events(binary_array):
         ends = ends[: len(starts)]
 
     return starts, ends
+
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from ipywidgets import IntSlider, Button, HBox, VBox, Layout, fixed, interactive_output
+from IPython.display import display
+
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from ipywidgets import IntSlider, Button, HBox, VBox, Layout, fixed, interactive_output
+from IPython.display import display
+
+
+# ------------------------------------------------------------------
+# 2)  viewer with a single set of widgets
+# ------------------------------------------------------------------
+def launch_event_viewer(
+    big_trace,
+    reference,
+    merged_dfs,
+    activations,
+    one_hot,
+    window_size_default=8000,
+    slider_step=4000,
+):
+    N = big_trace.shape[1]
+
+    # ---------- sliders ------------------------------------------------------
+    slider_start_idx = IntSlider(
+        min=0,
+        max=N,
+        step=slider_step,
+        value=0,
+        description="Start index:",
+        layout=Layout(width="75%"),
+        style={"description_width": "initial"},
+    )
+    slider_window_size = IntSlider(
+        min=1,
+        max=360000,
+        step=slider_step,
+        value=window_size_default,
+        description="Window size:",
+        layout=Layout(width="75%"),
+        style={"description_width": "initial"},
+    )
+
+    # ---------- navigation buttons ------------------------------------------
+    btn_prev_pred = Button(description="⟵ Prev Pred")
+    btn_next_pred = Button(description="Next Pred ⟶")
+    btn_prev_ref = Button(description="⟵ Prev Ref")
+    btn_next_ref = Button(description="Next Ref ⟶")
+
+    # keep track of “where we are” inside each DataFrame
+    state = {"pred_idx": None, "ref_idx": None}
+
+    def _jump(df, key, delta):
+        n = len(df)
+        if n == 0:
+            return
+        if state[key] is None:
+            state[key] = 0 if delta > 0 else n - 1
+        else:
+            state[key] = (state[key] + delta) % n
+        # slider_start_idx.value = int(df.iloc[state[key]].idx_start)
+        event = df.iloc[state[key]]
+        event_center = int((event.idx_start + event.idx_end) / 2)
+        centered_start = max(0, event_center - slider_window_size.value // 2)
+        slider_start_idx.value = centered_start
+
+    btn_prev_pred.on_click(lambda _: _jump(merged_dfs, "pred_idx", -1))
+    btn_next_pred.on_click(lambda _: _jump(merged_dfs, "pred_idx", +1))
+
+    ref_sorted = reference.sort_values("idx_start").reset_index(drop=True)
+    btn_prev_ref.on_click(lambda _: _jump(ref_sorted, "ref_idx", -1))
+    btn_next_ref.on_click(lambda _: _jump(ref_sorted, "ref_idx", +1))
+
+    # ---------- wire everything together ------------------------------------
+    controls = dict(
+        big_trace=fixed(big_trace),
+        reference=fixed(reference),
+        merged_dfs=fixed(merged_dfs),
+        activations=fixed(activations),
+        one_hot=fixed(one_hot),
+        start_idx=slider_start_idx,
+        window_size=slider_window_size,
+    )
+
+    out_fig = interactive_output(plot_window_with_act_onehot_and_uncertainty, controls)
+
+    ui = VBox(
+        [
+            HBox(
+                [btn_prev_pred, btn_next_pred], layout=Layout(justify_content="center")
+            ),
+            HBox([btn_prev_ref, btn_next_ref], layout=Layout(justify_content="center")),
+            slider_start_idx,
+            slider_window_size,
+        ]
+    )
+
+    display(ui, out_fig)
+
+
+def generate_overlapping_batches(data, window_size=8192, stride=8192, batch_size=16):
+    num_channels, total_length = data.shape
+    start_indices = np.arange(0, total_length - window_size + 1, stride)
+
+    for i in range(0, len(start_indices), batch_size):
+        batch = []
+        for start in start_indices[i : i + batch_size]:
+            window = data[:, start : start + window_size].copy()
+            normalizing_value = np.max([window[1:9].max(), 1])
+            window[1:9] = window[1:9] / normalizing_value
+            batch.append(window)
+
+        # Shape: (batch_size, 14, window_size)
+        yield np.stack(batch)

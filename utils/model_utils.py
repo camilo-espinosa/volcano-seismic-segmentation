@@ -63,6 +63,7 @@ def model_selector(arch, N=256, pretrained=True):
         )
     if pretrained and N == 256:
         doi = "10.5281/zenodo.15098817"
+        print(f"Downloading weights from {doi}...")
         record_id = doi.split(".")[-1]
         metadata_url = f"https://zenodo.org/api/records/{record_id}"
         response = requests.get(metadata_url)
@@ -103,6 +104,7 @@ def model_selector(arch, N=256, pretrained=True):
                 "model_state_dict"
             ]
         )
+        print("Succesfuly loaded weights")
     return model
 
 
