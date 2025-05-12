@@ -98,7 +98,7 @@ def plot_trace(
         plt.suptitle(title)
 
 
-def fold_X(X, N=256):
+def patch_stacking_X(X, N=256):
     """
     Performs the Folding procedure over a multi-channel 1D tensor to obtain a 'NxN' image.
 
@@ -115,7 +115,7 @@ def fold_X(X, N=256):
     return X.float()
 
 
-def fold_y(y, N=256, n_classes=6, n_stations=8):
+def patch_stacking_y(y, N=256, n_classes=6, n_stations=8):
     """
     Folds the target tensor `y`, generating `n_classes` 2D masks of size `N x N`.
 
@@ -136,7 +136,7 @@ def fold_y(y, N=256, n_classes=6, n_stations=8):
     return y.float()
 
 
-def unfold_y(mask, W=8192, N=256, n_classes=6):
+def activation_unstacking(img, len_window=8192, im_size=256, n_classes=6):
     """
     Unfolds the 2D predicted masks `mask` (produced by the model) back into the multi-channel 1D array `y`, which represents time segmentation.
 
@@ -149,15 +149,17 @@ def unfold_y(mask, W=8192, N=256, n_classes=6):
     Returns:
         torch.Tensor: The model prediction along time (batch_size, n_classes, 1,  W).
     """
-    output = torch.zeros([len(mask), n_classes, W])
-    for idx, patches in enumerate(mask):
+    output = zeros([len(img), n_classes, len_window])
+    for idx, patches in enumerate(img):
         patches = patches.unfold(1, 8, 8)
-        patches = patches.permute(0, 3, 1, 2).reshape(n_classes, 8, N * N // 8)
+        patches = patches.permute(0, 3, 1, 2).reshape(
+            n_classes, 8, im_size * im_size // 8
+        )
         patches_y = patches.sum(axis=1)
         patches_y = patches_y / patches_y.max()
         output[idx] = patches_y
-    del patches_y, mask
-    return output.float()
+    del patches_y, img
+    return output
 
 
 def detected_events(BG_diff):
@@ -557,9 +559,7 @@ def _top_two(conf_dict):
     return second_label, conf2_sum
 
 
-def merge_same_class_events_with_gap(
-    df: pd.DataFrame, minimal_time: int = 0
-) -> pd.DataFrame:
+def merge_same_class_events_with_gap(df: pd.DataFrame) -> pd.DataFrame:
     """
     Merge overlapping / nearly adjacent events of the *same* main class
     (`pred_label`).  All confidences are **summed**; the second‑ and
@@ -584,6 +584,13 @@ def merge_same_class_events_with_gap(
             second_pred_label,
             conf_1, conf_2
     """
+    gap_thr = {
+        "VT": 300,
+        "LP": 500,
+        "TR": 1500,
+        "AV": 400,
+        "IC": 100,
+    }
     merged_rows = []
     req_cols = {
         "idx_start",
@@ -616,6 +623,7 @@ def merge_same_class_events_with_gap(
         # -------------------------------------------------------------- #
         # iterate over the rest of the rows in the group
         # -------------------------------------------------------------- #
+        minimal_time = gap_thr[label]
         for _, row in grp.iloc[1:].iterrows():
             s, e = int(row.idx_start), int(row.idx_end)
 
@@ -666,15 +674,23 @@ def merge_same_class_events_with_gap(
     return pd.DataFrame(merged_rows)
 
 
-def activation_unstacking(img, len_window=8192, im_size=256, n_classes=6):
-    output = zeros([len(img), n_classes, len_window])
-    for idx, patches in enumerate(img):
-        patches = patches.unfold(1, 8, 8)
-        patches = patches.permute(0, 3, 1, 2).reshape(
-            n_classes, 8, im_size * im_size // 8
-        )
-        patches_y = patches.sum(axis=1)
-        patches_y = patches_y / patches_y.max()
-        output[idx] = patches_y
-    del patches_y, img
-    return output
+def get_events(binary_array):
+    binary_array = np.asarray(binary_array).astype(int)
+    diff = np.diff(binary_array)
+
+    starts = np.where(diff == -1)[0] + 1  # 1→0: event start
+    ends = np.where(diff == 1)[0] + 1  # 0→1: event end
+
+    # Case: ends before first start → remove extra end(s)
+    if len(ends) and len(starts) and ends[0] < starts[0]:
+        ends = ends[1:]
+
+    # Case: more starts than ends → event continues after the window
+    if len(starts) > len(ends):
+        starts = starts[: len(ends)]
+
+    # Case: more ends than starts → event started before the window
+    if len(ends) > len(starts):
+        ends = ends[: len(starts)]
+
+    return starts, ends
