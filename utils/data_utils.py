@@ -5,7 +5,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import matplotlib
-import pandas as df
+from collections import defaultdict
+import pandas as pd
+from torch import zeros
+
 
 def plot_trace(
     trace_data,
@@ -54,7 +57,7 @@ def plot_trace(
         6: "station 6",
         7: "station 7",
         8: "station 8",
-        9:  "BG",
+        9: "BG",
         10: "VT",
         11: "LP",
         12: "TR",
@@ -65,7 +68,7 @@ def plot_trace(
 
     fig, axes = plt.subplots(
         n_stations + 6, 1, sharex=True, figsize=figsize, num=num, dpi=dpi
-    )  
+    )
     for idx, wave in enumerate(trace_data):
         if idx < n_stations:
             sns.lineplot(
@@ -75,7 +78,7 @@ def plot_trace(
                 color=colors["input"],
                 lw=0.8,
             )
-            axes[idx].set_ylim(-1.2, 1.2)  
+            axes[idx].set_ylim(-1.2, 1.2)
         else:
             sns.lineplot(
                 x=np.arange(trace_data.shape[1]) / 100,
@@ -84,10 +87,10 @@ def plot_trace(
                 color=colors[idx - n_stations],
                 lw=2,
             )
-            axes[idx].set_ylim(-.1, 1.1) 
+            axes[idx].set_ylim(-0.1, 1.1)
         axes[idx].set_ylabel(f"                {labels[idx + 1]}", rotation=0)
         axes[idx].yaxis.set_label_position("right")  # Place y-labels on the right
-    axes[-1].set_xlabel("time [s]")  
+    axes[-1].set_xlabel("time [s]")
     if save:
         plt.savefig(save_path)
         plt.close("all")
@@ -105,7 +108,7 @@ def fold_X(X, N=256):
 
     Returns:
         torch.Tensor: The reshaped tensor of size (1, N, N).
-    """    
+    """
     patches = X.unfold(1, N, N)
     patches = patches.permute(1, 0, 2)
     X = patches.reshape(-1, N).unsqueeze(0)
@@ -124,7 +127,7 @@ def fold_y(y, N=256, n_classes=6, n_stations=8):
 
     Returns:
         torch.Tensor: The obtained class-specific 2D masks (n_classes, N, N), converted to float.
-    """    
+    """
     patches = y.repeat(n_stations, 1, 1)
     patches = patches.permute(1, 0, 2)
     patches = patches.unfold(2, N, N)
@@ -145,7 +148,7 @@ def unfold_y(mask, W=8192, N=256, n_classes=6):
 
     Returns:
         torch.Tensor: The model prediction along time (batch_size, n_classes, 1,  W).
-    """    
+    """
     output = torch.zeros([len(mask), n_classes, W])
     for idx, patches in enumerate(mask):
         patches = patches.unfold(1, 8, 8)
@@ -156,12 +159,13 @@ def unfold_y(mask, W=8192, N=256, n_classes=6):
     del patches_y, mask
     return output.float()
 
+
 def detected_events(BG_diff):
     """
     Detect events based on changes in the BG array difference values.
 
     Args:
-        BG_diff (np.ndarray): An array representing the difference in the BG array. 
+        BG_diff (np.ndarray): An array representing the difference in the BG array.
                               Values of -1 indicate the start of an event, and values of 1 indicate the end.
 
     Returns:
@@ -172,7 +176,7 @@ def detected_events(BG_diff):
 
     Notes:
         If no start or end indices are found, defaults are used: starting at index 0 and ending at the last index.
-    """    
+    """
     start_indices = np.where(BG_diff == -1)[0]
     if len(start_indices) == 0:
         start_indices = np.array([0])
@@ -193,8 +197,180 @@ def detected_events(BG_diff):
         invalid_ends = end_indices[end_indices < start_indices[0]]
         for invalid_end in invalid_ends:
             events.insert(0, (0, invalid_end, invalid_end))
-    events_df = df.DataFrame(events, columns=["start", "end", "length"])
+    events_df = pd.DataFrame(events, columns=["start", "end", "length"])
     return events_df
+
+
+def plot_window_with_act_onehot_and_uncertainty(
+    big_trace,
+    reference,
+    merged_dfs,
+    activations,
+    one_hot,
+    start_idx,
+    window_size=8192,
+    figsize=(10, 7),
+):
+    """
+    Plots a multi‑channel time window and overlays ground‑truth and predicted
+    events whose START/END are stored **as sample indices**.
+
+    Parameters
+    ----------
+    big_trace : np.ndarray, shape (9, N)
+        big_trace[0, :]  → Unix‐time stamps (float, 100 Hz)
+        big_trace[1:9, :] → 8 waveform channels
+    reference : pd.DataFrame
+        Columns:  idx_start, idx_end, event_type
+    merged_dfs : pd.DataFrame
+        Columns:  idx_start, idx_end, pred_label
+    start_idx : int
+        First sample to display.
+    window_size : int, default 8192
+        Number of samples shown (≈ 82 s at 100 Hz).
+    """
+
+    end_idx = start_idx + window_size  # last sample (exclusive)
+    time_window = big_trace[0, start_idx:end_idx]  # x‑axis (still Unix time)
+    time_window = np.arange(start_idx, end_idx)  # sample indices
+    fig, axes = plt.subplots(10, 1, figsize=figsize, sharex=True)
+
+    # ---------- 1. raw traces -------------------------------------------------
+    for ch in range(8):
+        axes[ch].plot(
+            time_window, big_trace[ch + 1, start_idx:end_idx], color="black", lw=0.8
+        )
+        # axes[ch].set_ylim(ylim_min,ylim_max)
+        axes[ch].set_ylabel(f"Ch {ch+1}")
+        axes[ch].grid(True, ls="--", alpha=0.3)
+
+    class_colorsa = {
+        1: "#df8d5e",
+        2: "#2ca02c",
+        3: "#d62728",
+        4: "#9467bd",
+        5: "#8c564b",
+        0: "gray",
+    }
+    class_lw = {1: 5, 2: 4, 3: 3, 4: 2, 5: 1, 0: 6}
+    min_ = np.min(activations[:, start_idx:end_idx])
+    max_ = np.max(activations[:, start_idx:end_idx])
+    min_ = min(min_, -0.2)
+    max_ = max(max_, 1)
+    for idxaa in range(6):
+        axes[-2].plot(
+            time_window,
+            activations[idxaa, start_idx:end_idx],
+            color=class_colorsa[idxaa],
+        )
+        axes[-1].set_ylim(min_, max_)
+    min_ = np.min(one_hot[:, start_idx:end_idx])
+    max_ = np.max(one_hot[:, start_idx:end_idx])
+    min_ = min(min_, -0.3)
+    max_ = max(max_, 1.3)
+    for idxaa in range(6):
+        axes[-1].plot(
+            time_window,
+            one_hot[idxaa, start_idx:end_idx],
+            color=class_colorsa[idxaa],
+            linewidth=2,  # class_lw[idxaa],
+        )
+        axes[-1].set_ylim(min_, max_)
+    # ---------- helpers -------------------------------------------------------
+    class_colors = {
+        "VT": "#df8d5e",
+        "LP": "#2ca02c",
+        "TR": "#d62728",
+        "AV": "#9467bd",
+        "IC": "#8c564b",
+    }
+
+    def _idx_to_time(i):  # convert sample index → Unix time for shading
+        # return big_trace[0, i]
+        return i
+
+    # ---------- 2. reference (ground‑truth) -----------------------------------
+    ref_events = reference[
+        (reference.idx_start < end_idx) & (reference.idx_end > start_idx)
+    ]
+
+    for _, row in ref_events.iterrows():
+        s_idx = max(row.idx_start, start_idx)
+        e_idx = min(row.idx_end, end_idx)
+        s, e = _idx_to_time(s_idx), _idx_to_time(e_idx)
+        c = class_colors.get(row.event_type, "gray")
+
+        for ax in axes:
+            # ax.axvspan(s, e, color=c, alpha=0.30)
+            # shade below 0  (s1..e1, from bottom to y=0)
+            y_min, y_max = ax.get_ylim()
+            y0_frac = (0 - y_min) / (y_max - y_min)
+            ax.axvspan(
+                s,
+                e,
+                ymin=0.0,  # bottom of axes
+                ymax=y0_frac,  # up to zero
+                color=c,
+                alpha=0.70,
+            )
+        axes[-1].text(
+            (s + e) / 2,
+            -0.15,
+            row.event_type,
+            ha="center",
+            va="top",
+            color=c,
+            transform=axes[-1].get_xaxis_transform(),
+        )
+
+    # ---------- 3. predictions ------------------------------------------------
+    pred_events = merged_dfs[
+        (merged_dfs.idx_start < end_idx) & (merged_dfs.idx_end > start_idx)
+    ]
+
+    for _, row in pred_events.iterrows():
+        s_idx = max(row.idx_start, start_idx)
+        e_idx = min(row.idx_end, end_idx)
+        s, e = _idx_to_time(s_idx), _idx_to_time(e_idx)
+        c = class_colors.get(row.pred_label, "gray")
+
+        for ax in axes:
+            # ax.axvspan(s, e, color=c, alpha=0.10)
+            # current limits after all your data are plotted
+            y_min, y_max = ax.get_ylim()
+            # axis‑fraction corresponding to y = 0
+            y0_frac = (0 - y_min) / (y_max - y_min)
+            # shade above 0  (s2..e2, from y=0 to top)
+            ax.axvspan(
+                s,
+                e,
+                ymin=y0_frac,  # start at zero
+                ymax=1.0,  # to the top
+                color=c,
+                alpha=0.20,
+            )
+        conf_1 = row.conf_1
+        conf_2 = row.conf_2
+        if conf_2 > 10:
+            label_ = f"{row.pred_label}:{row.conf_1}% | {row.second_pred_label}:{row.conf_2}%"
+        else:
+            label_ = f"{row.pred_label}:{row.conf_1}%"
+        axes[0].text(
+            (s + e) / 2,
+            1.02,
+            label_,
+            ha="center",
+            va="bottom",
+            color=c,
+            fontweight="bold",
+            transform=axes[0].get_xaxis_transform(),
+        )
+
+    # axes[-1].set_xlabel("Index")
+    # axes[-1].set_xlabel("Time (Unix seconds)")
+    axes[-1].set_xlabel("Sample index")
+    plt.tight_layout()
+    plt.show()
 
 
 def post_processing(
@@ -225,7 +401,7 @@ def post_processing(
 
     Notes:
         If no events are detected, a default row with the entire signal length is returned.
-    """    
+    """
     max_indices = np.argmax(output, axis=0)
     processed_out = np.eye(len(output))[max_indices].T
     BG_diff = np.diff(processed_out[0])
@@ -242,7 +418,7 @@ def post_processing(
             events_df.at[index, "class_n"] = predicted_class
             events_df.at[index, "class_label"] = pred_label
     else:
-        events_df = df.DataFrame(
+        events_df = pd.DataFrame(
             [[0, 8191, 8192, None, None]],
             columns=["start", "end", "length", "class_n", "class_label"],
         )
@@ -251,7 +427,6 @@ def post_processing(
         events_df.at[0, "class_n"] = predicted_class
         events_df.at[0, "class_label"] = pred_label
     return events_df
-
 
 
 def plot_segmentation(
@@ -330,7 +505,7 @@ def plot_segmentation(
         axes[-1].set_xlabel("time [s]")  # Shared x-axis label
         axes[idx].yaxis.set_label_position("right")  # Place y-labels on the left
         axes[idx].set_ylim(-1.2, 1.2)  # Set limits for y-axis
-    #detected_events_df = detected_events_df.query("length>250")
+    # detected_events_df = detected_events_df.query("length>250")
     for index, row in detected_events_df.iterrows():
         for idx, wave in enumerate(input_traces):
             axes[idx].axvspan(
@@ -352,7 +527,154 @@ def plot_segmentation(
 
     if save:
         plt.savefig(save_path)
-        plt.close("all" )
+        plt.close("all")
     else:
         plt.suptitle(title)
         # plt.show()
+
+
+# ----------------------------------------------------------------------
+# helper: pick the two labels with the highest accumulated confidence
+# ----------------------------------------------------------------------
+def _top_two(conf_dict):
+    """
+    Parameters
+    ----------
+    conf_dict : dict[str, float]
+
+    Returns
+    -------
+    (second_label, conf2_sum)
+    """
+    if not conf_dict:
+        return None, None, 0.0, 0.0
+
+    # sort by decreasing confidence
+    ranked = sorted(conf_dict.items(), key=lambda kv: -kv[1])
+
+    second_label, conf2_sum = ranked[0]
+
+    return second_label, conf2_sum
+
+
+def merge_same_class_events_with_gap(
+    df: pd.DataFrame, minimal_time: int = 0
+) -> pd.DataFrame:
+    """
+    Merge overlapping / nearly adjacent events of the *same* main class
+    (`pred_label`).  All confidences are **summed**; the second‑ and
+    classes are chosen as the two labels with the highest *cumulative*
+    confidence among the candidates that appeared inside the block.
+
+    Parameters
+    ----------
+    df : DataFrame
+        Required columns::
+            idx_start, idx_end, pred_label,
+            second_pred_label,
+            conf_1, conf_2
+    minimal_time : int, default 0
+        Maximum gap (in samples) allowed between two events so they are merged.
+
+    Returns
+    -------
+    DataFrame
+        One row per merged event, columns::
+            idx_start, idx_end, pred_label,
+            second_pred_label,
+            conf_1, conf_2
+    """
+    merged_rows = []
+    req_cols = {
+        "idx_start",
+        "idx_end",
+        "pred_label",
+        "second_pred_label",
+        "conf_1",
+        "conf_2",
+    }
+    missing = req_cols - set(df.columns)
+    if missing:
+        raise ValueError(f"Missing columns: {missing}")
+
+    # ------------------------------------------------------------------ #
+    # loop over each *primary* class separately
+    # ------------------------------------------------------------------ #
+    for label, grp in df.groupby("pred_label"):
+        grp = grp.sort_values("idx_start").reset_index(drop=True)
+
+        # initialise the current block with the first row
+        cur_start = int(grp.loc[0, "idx_start"])
+        cur_end = int(grp.loc[0, "idx_end"])
+        conf1_sum = float(grp.loc[0, "conf_1"])
+
+        # accumulate confidences for *all* 2nd / 3rd choices that appear
+        alt_conf = defaultdict(float)
+        if pd.notna(grp.loc[0, "second_pred_label"]):
+            alt_conf[grp.loc[0, "second_pred_label"]] += float(grp.loc[0, "conf_2"])
+
+        # -------------------------------------------------------------- #
+        # iterate over the rest of the rows in the group
+        # -------------------------------------------------------------- #
+        for _, row in grp.iloc[1:].iterrows():
+            s, e = int(row.idx_start), int(row.idx_end)
+
+            if s <= cur_end + minimal_time:  # merge
+                cur_end = max(cur_end, e)
+                conf1_sum = min(100, (conf1_sum + float(row.conf_1)) / 2)
+
+                if pd.notna(row.second_pred_label):
+                    alt_conf[row.second_pred_label] = min(
+                        100, (alt_conf[row.second_pred_label] + float(row.conf_2)) / 2
+                    )
+
+            else:  # close block
+                second_label, conf2_sum = _top_two(alt_conf)
+                merged_rows.append(
+                    {
+                        "idx_start": cur_start,
+                        "idx_end": cur_end,
+                        "pred_label": label,
+                        "second_pred_label": second_label,
+                        "conf_1": conf1_sum,
+                        "conf_2": conf2_sum,
+                    }
+                )
+
+                # start a new block
+                cur_start, cur_end = s, e
+                conf1_sum = float(row.conf_1)
+                alt_conf = defaultdict(float)
+                if pd.notna(row.second_pred_label):
+                    alt_conf[row.second_pred_label] = min(
+                        100, (alt_conf[row.second_pred_label] + float(row.conf_2)) / 2
+                    )
+
+        # push the last block
+        second_label, conf2_sum = _top_two(alt_conf)
+        merged_rows.append(
+            {
+                "idx_start": cur_start,
+                "idx_end": cur_end,
+                "pred_label": label,
+                "second_pred_label": second_label,
+                "conf_1": conf1_sum,
+                "conf_2": conf2_sum,
+            }
+        )
+
+    return pd.DataFrame(merged_rows)
+
+
+def activation_unstacking(img, len_window=8192, im_size=256, n_classes=6):
+    output = zeros([len(img), n_classes, len_window])
+    for idx, patches in enumerate(img):
+        patches = patches.unfold(1, 8, 8)
+        patches = patches.permute(0, 3, 1, 2).reshape(
+            n_classes, 8, im_size * im_size // 8
+        )
+        patches_y = patches.sum(axis=1)
+        patches_y = patches_y / patches_y.max()
+        output[idx] = patches_y
+    del patches_y, img
+    return output

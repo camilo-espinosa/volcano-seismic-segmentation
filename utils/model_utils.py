@@ -4,14 +4,20 @@ from SwinUNet import SwinTransformerSys
 from UNet import UNet
 from PhaseNet import PhaseNet
 import requests
-
 import os
+import segmentation_models_pytorch as smp
+from torch import nn
+
+
+def return_trainable_parameters(model: nn.Module):
+    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    return trainable_params
 
 
 def model_selector(arch, N=256, pretrained=True):
     device = "cuda" if cuda.is_available() == True else "cpu"
     if arch == "UNet":
-        model = UNet2(in_channels=1, out_channels=6, init_features=16, depth=5)
+        model = UNet(in_channels=1, out_channels=6, init_features=16, depth=5)
     elif arch == "DeepLabV3":
         model = smp.DeepLabV3Plus(
             encoder_depth=5,
@@ -54,8 +60,8 @@ def model_selector(arch, N=256, pretrained=True):
             norm="std",
             filters_root=32,
         )
-    if pretrained:
-        doi = "10.5281/zenodo.13902232"
+    if pretrained and N == 256:
+        doi = "10.5281/zenodo.15098817"
         record_id = doi.split(".")[-1]
         metadata_url = f"https://zenodo.org/api/records/{record_id}"
         response = requests.get(metadata_url)
@@ -65,14 +71,14 @@ def model_selector(arch, N=256, pretrained=True):
             file_to_download = files[
                 4
             ]  # 1: UNet.pt - https://zenodo.org/api/records/13902232/files/UNet.pt/content
-        elif arch == "DeepLabV3":
-            file_to_download = files[
-                1
-            ]  # 2: DeepLabV3Plus.pt - https://zenodo.org/api/records/13902232/files/DeepLabV3Plus.pt/content
         elif arch == "UNetPlusPlus":
             file_to_download = files[
                 3
             ]  # 3: UNetPlusPlus.pt - https://zenodo.org/api/records/13902232/files/UNetPlusPlus.pt/content
+        elif arch == "DeepLabV3":
+            file_to_download = files[
+                1
+            ]  # 2: DeepLabV3Plus.pt - https://zenodo.org/api/records/13902232/files/DeepLabV3Plus.pt/content
         elif arch == "SwinUNet":
             file_to_download = files[
                 0
@@ -92,6 +98,8 @@ def model_selector(arch, N=256, pretrained=True):
             print(f"Downloaded {weights_path}")
         print(f"Loading weights...")
         model.load_state_dict(
-            load(weights_path, map_location=device)["model_state_dict"]
+            load(weights_path, map_location=device, weights_only=False)[
+                "model_state_dict"
+            ]
         )
     return model
