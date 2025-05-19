@@ -47,7 +47,7 @@ cd examples
 
 ## Data and weights availability:
 Datasets are freely available at: 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15384890.svg)](https://doi.org/10.5281/zenodo.15384890)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15384923.svg)](https://doi.org/10.5281/zenodo.15384923)
 
 Pre-trained weights for the four evaluated models (UNet, UNet++, DeepLabV3+ and SwinUNet) are also freely available at: 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15098817.svg)](https://doi.org/10.5281/zenodo.15098817).
