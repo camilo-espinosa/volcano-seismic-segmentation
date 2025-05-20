@@ -6,8 +6,8 @@ Code Implementation of the article "[A Framework for Real-Time Volcano-Seismic E
 
 ## Structure
 - **`utils/`**: Contains utility functions to perform the proposed framework.
-- **`models/`**: Includes model architectures. UNet and SwinUNet Implementations are used out-of-the-box from the codes at [https://github.com/mateuszbuda/brain-segmentation-pytorch](https://github.com/mateuszbuda/brain-segmentation-pytorch) and [https://github.com/HuCaoFighting/Swin-Unet](https://github.com/HuCaoFighting/Swin-Unet), respectively. Pre-trained weights are available at [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.13902232.svg)](https://doi.org/10.5281/zenodo.13902232).
-- **`examples/`**: Example scripts for data exploration, demonstration of the folding procedure, and running the model.
+- **`models/`**: Includes model architectures. UNet and SwinUNet Implementations are used out-of-the-box from the codes at [https://github.com/mateuszbuda/brain-segmentation-pytorch](https://github.com/mateuszbuda/brain-segmentation-pytorch) and [https://github.com/HuCaoFighting/Swin-Unet](https://github.com/HuCaoFighting/Swin-Unet), respectively. Pre-trained weights are available at [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15098817.svg)](https://doi.org/10.5281/zenodo.15098817).
+- **`examples/`**: Example scripts for data exploration, demonstration of the patch stacking procedure, and running the model on pre-segmented windows and continuous data streams.
 
 
 ## Setup
@@ -37,7 +37,7 @@ cd examples
 [explore_data.ipynb](https://github.com/camilo-espinosa/volcano-seismic-segmentation/blob/main/examples/explore_data.ipynb)
 
 ### Folding Demonstration: 
-[patch_stacking_demo.ipynb](https://github.com/camilo-espinosa/volcano-seismic-segmentation/blob/main/examples/folding_procedure.ipynb)
+[patch_stacking_demo.ipynb](https://github.com/camilo-espinosa/volcano-seismic-segmentation/blob/main/examples/patch_stacking_demo.ipynb)
 
 ### Window Level Detection Demo:
 [window_level_demo.ipynb](https://github.com/camilo-espinosa/volcano-seismic-segmentation/blob/main/examples/window_level_demo.ipynb)
