@@ -36,7 +36,7 @@ cd examples
 ### Explore the data: 
 [explore_data.ipynb](https://github.com/camilo-espinosa/volcano-seismic-segmentation/blob/main/examples/explore_data.ipynb)
 
-### Folding Demonstration: 
+### Patch Stacking Demonstration: 
 [patch_stacking_demo.ipynb](https://github.com/camilo-espinosa/volcano-seismic-segmentation/blob/main/examples/patch_stacking_demo.ipynb)
 
 ### Window Level Detection Demo:
