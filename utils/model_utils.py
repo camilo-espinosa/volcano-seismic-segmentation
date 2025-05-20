@@ -106,15 +106,3 @@ def model_selector(arch, N=256, pretrained=True):
         )
         print("Succesfuly loaded weights")
     return model
-
-
-class SuppressPrint:
-    def __enter__(self):
-        self._original_stdout = sys.stdout
-        self._devnull = open(os.devnull, "w")
-        sys.stdout = self._devnull
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        sys.stdout = self._original_stdout
-        if not self._devnull.closed:
-            self._devnull.close()

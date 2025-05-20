@@ -7,3 +7,6 @@ utils/__pycache__/real_time_utils.cpython-311.pyc
 
 examples/NVCh_10h_continuous_trace.zip
 
+models/__pycache__/PhaseNet.cpython-311.pyc
+models/__pycache__/SwinUNet.cpython-311.pyc
+models/__pycache__/UNet.cpython-311.pyc
