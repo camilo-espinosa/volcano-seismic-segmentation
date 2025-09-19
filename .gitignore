@@ -10,3 +10,7 @@ examples/NVCh_10h_continuous_trace.zip
 models/__pycache__/PhaseNet.cpython-311.pyc
 models/__pycache__/SwinUNet.cpython-311.pyc
 models/__pycache__/UNet.cpython-311.pyc
+examples/DeepLabV3Plus.pt
+examples/PhaseNet.pt
+examples/SwinUNet.pt
+examples/UNetPlusPlus.pt

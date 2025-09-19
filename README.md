@@ -45,9 +45,12 @@ cd examples
 ### Continuous Data Detection Demo:
 [continuous_detection_demo.ipynb](https://github.com/camilo-espinosa/volcano-seismic-segmentation/blob/main/examples/continuous_detection_demo.ipynb)
 
+### Processing Times:
+[processing_times.ipynb](https://github.com/camilo-espinosa/volcano-seismic-segmentation/blob/main/examples/processing_times.ipynb)
+
 ## Data and weights availability:
 Datasets are freely available at: 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15384923.svg)](https://doi.org/10.5281/zenodo.15384923)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17163020.svg)](https://doi.org/10.5281/zenodo.17163020)
 
 Pre-trained weights for the four evaluated models (UNet, UNet++, DeepLabV3+ and SwinUNet) are also freely available at: 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15098817.svg)](https://doi.org/10.5281/zenodo.15098817).
